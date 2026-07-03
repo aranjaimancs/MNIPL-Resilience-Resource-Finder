@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Leaflet CSS is imported inside MapView.tsx (client component) */
+
+@layer base {
+  body {
+    @apply bg-paper text-ink font-sans;
+  }
+
+  ::-webkit-scrollbar {
+    width: 9px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cfc6b0;
+    border-radius: 9px;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.panel-rise {
+  animation: rise 0.26s ease both;
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.sheet-rise {
+  animation: sheet-up 0.30s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@keyframes user-loc-pulse {
+  0%   { transform: translate(-50%, -50%) scale(1); opacity: 0.65; }
+  100% { transform: translate(-50%, -50%) scale(2.8); opacity: 0; }
+}
+
+.user-location-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #2E7FB8;
+  animation: user-loc-pulse 2s ease-out infinite;
+}

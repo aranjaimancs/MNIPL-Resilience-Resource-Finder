@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Environment variables — NEVER commit real secrets
+.env.local
+.env*.local
+
+# Next.js build output
+.next/
+out/
+
+# next-pwa generated service worker files (regenerated on each build)
+public/sw.js
+public/workbox-*.js
+public/fallback-*.js
+
+# TypeScript build cache
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+# Claude Code memory (local tooling, not part of the app)
+.claude/
+
+# Internal / scratch files
+CLAUDE_CODE_PROMPT.md
+resilience-hub-finder.jsx
+
+# Admin docs — keep local only, never push to GitHub
+docs/
+
+# OS files
+.DS_Store
+Thumbs.db
