@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { Hub, ProfileQuestion } from "@/lib/types";
 import { DEFAULT_PROFILE_QUESTIONS } from "@/lib/profileQuestions";
@@ -37,12 +38,14 @@ export default async function HomePage({
   const profileQuestions = (questions as ProfileQuestion[]) ?? DEFAULT_PROFILE_QUESTIONS;
 
   return (
-    <ResidentView
-      hubs={allHubs}
-      initialHub={initialHub}
-      isMniplAdmin={isMniplAdmin}
-      isHubAdmin={isHubAdmin}
-      profileQuestions={profileQuestions}
-    />
+    <Suspense>
+      <ResidentView
+        hubs={allHubs}
+        initialHub={initialHub}
+        isMniplAdmin={isMniplAdmin}
+        isHubAdmin={isHubAdmin}
+        profileQuestions={profileQuestions}
+      />
+    </Suspense>
   );
 }

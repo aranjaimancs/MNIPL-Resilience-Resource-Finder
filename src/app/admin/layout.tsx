@@ -24,7 +24,7 @@ export default async function AdminLayout({
     .single();
 
   if (profile?.role !== "hub_admin" && profile?.role !== "mnipl_admin") {
-    redirect("/?unauthorized=1");
+    redirect("/?access=pending");
   }
 
   return <>{children}</>;
