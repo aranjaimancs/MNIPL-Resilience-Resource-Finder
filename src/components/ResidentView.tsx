@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { User, Building2, ShieldCheck, Info, LogOut } from "lucide-react";
+import { User, Building2, ShieldCheck, Info, LogOut, LogIn } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { FilterBar } from "@/components/FilterBar";
 import { HubList } from "@/components/HubList";
@@ -50,6 +50,17 @@ export function ResidentView({ hubs, initialHub, isMniplAdmin = false, isHubAdmi
   const [openOnly, setOpenOnly] = useState(false);
   const [query, setQuery] = useState("");
   const [userPos, setUserPos] = useState<{ pos: [number, number]; accuracy: number } | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); // null = not yet known
+
+  // Detect session client-side
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => setIsLoggedIn(!!session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setIsLoggedIn(!!session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Prompt for location on first load
   useEffect(() => {
@@ -173,13 +184,23 @@ export function ResidentView({ hubs, initialHub, isMniplAdmin = false, isHubAdmi
               <ShieldCheck size={15} /> <span className="hidden sm:inline">MNIPL Admin</span>
             </a>
           )}
-          <button
-            onClick={handleSignOut}
-            title="Sign out"
-            className="flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg text-sm font-semibold text-paper opacity-70 hover:opacity-100 transition-opacity"
-          >
-            <LogOut size={15} /> <span className="hidden sm:inline">Sign out</span>
-          </button>
+          {isLoggedIn === true && (
+            <button
+              onClick={handleSignOut}
+              title="Sign out"
+              className="flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg text-sm font-semibold text-paper opacity-70 hover:opacity-100 transition-opacity"
+            >
+              <LogOut size={15} /> <span className="hidden sm:inline">Sign out</span>
+            </button>
+          )}
+          {isLoggedIn === false && (
+            <a
+              href="/login"
+              className="flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg text-sm font-semibold text-paper opacity-70 hover:opacity-100 transition-opacity"
+            >
+              <LogIn size={15} /> <span className="hidden sm:inline">Sign in</span>
+            </a>
+          )}
         </div>
       </header>
 
