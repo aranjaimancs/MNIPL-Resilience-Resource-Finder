@@ -39,11 +39,10 @@ interface ResidentViewProps {
   initialHub?: Hub | null;
   isMniplAdmin?: boolean;
   isHubAdmin?: boolean;
-  isLoggedIn?: boolean;
   profileQuestions: ProfileQuestion[];
 }
 
-export function ResidentView({ hubs, initialHub, isMniplAdmin = false, isHubAdmin = false, isLoggedIn = false, profileQuestions }: ResidentViewProps) {
+export function ResidentView({ hubs, initialHub, isMniplAdmin = false, isHubAdmin = false, profileQuestions }: ResidentViewProps) {
   const searchParams = useSearchParams();
   const accessPending = searchParams.get("access") === "pending";
   const router = useRouter();
@@ -52,6 +51,19 @@ export function ResidentView({ hubs, initialHub, isMniplAdmin = false, isHubAdmi
   const [openOnly, setOpenOnly] = useState(false);
   const [query, setQuery] = useState("");
   const [userPos, setUserPos] = useState<{ pos: [number, number]; accuracy: number } | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Detect login state client-side so sign-out is always visible when authed
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Prompt for location on first load
   useEffect(() => {

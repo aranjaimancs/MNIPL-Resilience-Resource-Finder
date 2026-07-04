@@ -42,7 +42,6 @@ export default async function HomePage({
       initialHub={initialHub}
       isMniplAdmin={isMniplAdmin}
       isHubAdmin={isHubAdmin}
-      isLoggedIn={!!user}
       profileQuestions={profileQuestions}
     />
   );
