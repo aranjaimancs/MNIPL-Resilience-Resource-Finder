@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { MapPin, User, Building2, ShieldCheck, Info, LogOut } from "lucide-react";
+import { User, Building2, ShieldCheck, Info, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
-import { useRouter } from "next/navigation";
 import { FilterBar } from "@/components/FilterBar";
 import { HubList } from "@/components/HubList";
 import { OfflineBanner } from "@/components/OfflineBanner";
@@ -51,19 +50,6 @@ export function ResidentView({ hubs, initialHub, isMniplAdmin = false, isHubAdmi
   const [openOnly, setOpenOnly] = useState(false);
   const [query, setQuery] = useState("");
   const [userPos, setUserPos] = useState<{ pos: [number, number]; accuracy: number } | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // Detect login state client-side so sign-out is always visible when authed
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsLoggedIn(!!session);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
 
   // Prompt for location on first load
   useEffect(() => {
@@ -187,15 +173,13 @@ export function ResidentView({ hubs, initialHub, isMniplAdmin = false, isHubAdmi
               <ShieldCheck size={15} /> <span className="hidden sm:inline">MNIPL Admin</span>
             </a>
           )}
-          {isLoggedIn && (
-            <button
-              onClick={handleSignOut}
-              title="Sign out"
-              className="flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg text-sm font-semibold text-paper opacity-70 hover:opacity-100 transition-opacity"
-            >
-              <LogOut size={15} /> <span className="hidden sm:inline">Sign out</span>
-            </button>
-          )}
+          <button
+            onClick={handleSignOut}
+            title="Sign out"
+            className="flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg text-sm font-semibold text-paper opacity-70 hover:opacity-100 transition-opacity"
+          >
+            <LogOut size={15} /> <span className="hidden sm:inline">Sign out</span>
+          </button>
         </div>
       </header>
 
