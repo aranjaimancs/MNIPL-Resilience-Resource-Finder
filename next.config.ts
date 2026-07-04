@@ -21,6 +21,18 @@ export default withPWA({
   fallbacks: { document: "/offline" },
   workboxOptions: {
     runtimeCaching: [
+      // Auth and API routes must NEVER be served from cache or the offline fallback.
+      // The service worker passes them straight to the network so the server can
+      // handle the auth code exchange, session cookies, and redirects correctly.
+      {
+        urlPattern: /^https?:\/\/[^/]+\/(auth|api)(\/|$)/,
+        handler: "NetworkOnly",
+      },
+      // Same for login and admin — always fetch fresh so session state is correct.
+      {
+        urlPattern: /^https?:\/\/[^/]+\/(login|admin)(\/|$)/,
+        handler: "NetworkOnly",
+      },
       // Main page — NetworkFirst so online users get fresh hub statuses,
       // offline users get the cached page (which contains hub list in RSC payload)
       {

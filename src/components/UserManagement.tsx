@@ -10,6 +10,7 @@ import {
   ChevronDown,
   AlertTriangle,
   LogOut,
+  Trash2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { useRouter } from "next/navigation";
@@ -57,6 +58,8 @@ export function UserManagement({
     user: ManagedUser;
     newRole: Role;
   } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<ManagedUser | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [feedback, setFeedback] = useState<{
     id: string;
     message: string;
@@ -119,6 +122,25 @@ export function UserManagement({
       return;
     }
     changeRole(targetUser, newRole);
+  }
+
+  async function deleteUser(target: ManagedUser) {
+    setDeleting(true);
+    const res = await fetch("/api/admin/delete-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: target.id }),
+    });
+    if (res.ok) {
+      setUsers((prev) => prev.filter((u) => u.id !== target.id));
+      setFeedback({ id: target.id, message: `${target.email ?? "User"} has been deleted.`, ok: true });
+      setTimeout(() => setFeedback(null), 3500);
+    } else {
+      const { error } = await res.json().catch(() => ({}));
+      setFeedback({ id: target.id, message: error ?? "Failed to delete user.", ok: false });
+    }
+    setConfirmDelete(null);
+    setDeleting(false);
   }
 
   const isSelf = (u: ManagedUser) => u.id === currentUserId;
@@ -266,7 +288,7 @@ export function UserManagement({
                     <div className="text-xs text-ink-soft truncate">{u.email}</div>
                   </div>
 
-                  {/* Role control */}
+                  {/* Role control + delete */}
                   {self ? (
                     // Can't change your own role — show a static pill
                     <span

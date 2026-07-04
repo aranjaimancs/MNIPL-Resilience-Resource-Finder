@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { MapPin, Mail, Lock, User, AlertCircle } from "lucide-react";
+import { MapPin, Mail, Lock, User, AlertCircle, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -189,13 +189,21 @@ function LoginForm() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-ink-soft mt-5">
-          Hub operators:{" "}
-          <a href="mailto:info@mnipl.org" className="underline hover:text-ink">
-            contact MNIPL
-          </a>{" "}
-          to register your congregation.
-        </p>
+        <div className="flex items-center justify-between mt-5">
+          <a
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-soft hover:text-ink transition-colors"
+          >
+            <ArrowLeft size={13} strokeWidth={2.5} />
+            Back to map
+          </a>
+          <p className="text-xs text-ink-soft">
+            Hub operators:{" "}
+            <a href="mailto:info@mnipl.org" className="underline hover:text-ink">
+              contact MNIPL
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );
