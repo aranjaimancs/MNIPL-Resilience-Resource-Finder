@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { useRouter } from "next/navigation";
-import type { ManagedUser } from "@/app/admin/users/page";
+import type { ManagedUser } from "@/lib/types";
 
 // ── Role display config ────────────────────────────────────────────────────
 
