@@ -3,7 +3,9 @@
 import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import { MapPin, User, Building2, ShieldCheck, Info } from "lucide-react";
+import { MapPin, User, Building2, ShieldCheck, Info, LogOut } from "lucide-react";
+import { createClient } from "@/lib/supabase/browser";
+import { useRouter } from "next/navigation";
 import { FilterBar } from "@/components/FilterBar";
 import { HubList } from "@/components/HubList";
 import { OfflineBanner } from "@/components/OfflineBanner";
@@ -37,12 +39,14 @@ interface ResidentViewProps {
   initialHub?: Hub | null;
   isMniplAdmin?: boolean;
   isHubAdmin?: boolean;
+  isLoggedIn?: boolean;
   profileQuestions: ProfileQuestion[];
 }
 
-export function ResidentView({ hubs, initialHub, isMniplAdmin = false, isHubAdmin = false, profileQuestions }: ResidentViewProps) {
+export function ResidentView({ hubs, initialHub, isMniplAdmin = false, isHubAdmin = false, isLoggedIn = false, profileQuestions }: ResidentViewProps) {
   const searchParams = useSearchParams();
   const accessPending = searchParams.get("access") === "pending";
+  const router = useRouter();
   const [selected, setSelected] = useState<Hub | null>(initialHub ?? null);
   const [filters, setFilters] = useState<HubFunction[]>([]);
   const [openOnly, setOpenOnly] = useState(false);
@@ -125,6 +129,13 @@ export function ResidentView({ hubs, initialHub, isMniplAdmin = false, isHubAdmi
     window.history.replaceState(null, "", "/");
   }, []);
 
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
   return (
     <div
       className="flex flex-col font-sans text-ink bg-paper"
@@ -163,6 +174,15 @@ export function ResidentView({ hubs, initialHub, isMniplAdmin = false, isHubAdmi
             >
               <ShieldCheck size={15} /> <span className="hidden sm:inline">MNIPL Admin</span>
             </a>
+          )}
+          {isLoggedIn && (
+            <button
+              onClick={handleSignOut}
+              title="Sign out"
+              className="flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg text-sm font-semibold text-paper opacity-70 hover:opacity-100 transition-opacity"
+            >
+              <LogOut size={15} /> <span className="hidden sm:inline">Sign out</span>
+            </button>
           )}
         </div>
       </header>
