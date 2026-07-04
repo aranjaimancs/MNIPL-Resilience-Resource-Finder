@@ -80,6 +80,13 @@ export default function AdminPage() {
 
       const { data: profile } = await supabase
         .from("profiles").select("role").eq("id", user.id).single();
+
+      // Residents have no admin access — send them back to the map
+      if (!profile || profile.role === "resident") {
+        router.replace("/?access=pending");
+        return;
+      }
+
       setIsMniplAdmin(profile?.role === "mnipl_admin");
 
       const { data } = await supabase

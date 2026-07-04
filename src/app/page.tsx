@@ -21,6 +21,7 @@ export default async function HomePage({
   ]);
 
   let isMniplAdmin = false;
+  let isHubAdmin = false;
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -28,6 +29,7 @@ export default async function HomePage({
       .eq("id", user.id)
       .single();
     isMniplAdmin = profile?.role === "mnipl_admin";
+    isHubAdmin = profile?.role === "hub_admin" || isMniplAdmin;
   }
 
   const allHubs = (hubs as Hub[]) ?? [];
@@ -39,6 +41,7 @@ export default async function HomePage({
       hubs={allHubs}
       initialHub={initialHub}
       isMniplAdmin={isMniplAdmin}
+      isHubAdmin={isHubAdmin}
       profileQuestions={profileQuestions}
     />
   );

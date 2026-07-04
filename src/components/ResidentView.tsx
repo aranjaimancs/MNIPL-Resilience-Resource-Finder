@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import { MapPin, User, Building2, ShieldCheck } from "lucide-react";
+import { MapPin, User, Building2, ShieldCheck, Info } from "lucide-react";
 import { FilterBar } from "@/components/FilterBar";
 import { HubList } from "@/components/HubList";
 import { OfflineBanner } from "@/components/OfflineBanner";
@@ -35,10 +36,13 @@ interface ResidentViewProps {
   hubs: Hub[];
   initialHub?: Hub | null;
   isMniplAdmin?: boolean;
+  isHubAdmin?: boolean;
   profileQuestions: ProfileQuestion[];
 }
 
-export function ResidentView({ hubs, initialHub, isMniplAdmin = false, profileQuestions }: ResidentViewProps) {
+export function ResidentView({ hubs, initialHub, isMniplAdmin = false, isHubAdmin = false, profileQuestions }: ResidentViewProps) {
+  const searchParams = useSearchParams();
+  const accessPending = searchParams.get("access") === "pending";
   const [selected, setSelected] = useState<Hub | null>(initialHub ?? null);
   const [filters, setFilters] = useState<HubFunction[]>([]);
   const [openOnly, setOpenOnly] = useState(false);
@@ -144,12 +148,14 @@ export function ResidentView({ hubs, initialHub, isMniplAdmin = false, profileQu
           >
             <User size={15} /> <span className="hidden sm:inline">Find a hub</span>
           </a>
-          <a
-            href="/admin"
-            className="flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg text-sm font-semibold text-paper opacity-70 hover:opacity-100 transition-opacity"
-          >
-            <Building2 size={15} /> <span className="hidden sm:inline">Hub admin</span>
-          </a>
+          {isHubAdmin && (
+            <a
+              href="/admin"
+              className="flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg text-sm font-semibold text-paper opacity-70 hover:opacity-100 transition-opacity"
+            >
+              <Building2 size={15} /> <span className="hidden sm:inline">Hub admin</span>
+            </a>
+          )}
           {isMniplAdmin && (
             <a
               href="/admin/review"
@@ -163,6 +169,16 @@ export function ResidentView({ hubs, initialHub, isMniplAdmin = false, profileQu
 
       <OfflineBanner />
       <InstallPrompt />
+
+      {accessPending && (
+        <div className="flex items-start gap-2.5 px-4 py-3 bg-amber-50 border-b border-amber-200 text-sm text-amber-800">
+          <Info size={16} className="shrink-0 mt-0.5" />
+          <span>
+            Your account is pending approval. Once MNIPL staff activates your role, you&apos;ll be able to access the hub management area.{" "}
+            <a href="mailto:info@mnipl.org" className="underline font-semibold">Contact MNIPL</a> to request access.
+          </span>
+        </div>
+      )}
 
       {/* Body */}
       <div className="flex flex-1 min-h-0">
