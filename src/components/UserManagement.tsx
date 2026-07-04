@@ -299,69 +299,78 @@ export function UserManagement({
                       {roleInfo.label}
                     </span>
                   ) : (
-                    <div className="relative shrink-0">
-                      <button
-                        disabled={busy}
-                        onClick={() =>
-                          setOpenDropdown(openDropdown === u.id ? null : u.id)
-                        }
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors disabled:opacity-50"
-                        style={{
-                          color: roleInfo.color,
-                          background: roleInfo.bg,
-                          borderColor: roleInfo.color + "33",
-                        }}
-                      >
-                        {busy ? "Saving…" : roleInfo.label}
-                        {!busy && <ChevronDown size={11} strokeWidth={2.5} />}
-                      </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="relative">
+                        <button
+                          disabled={busy}
+                          onClick={() =>
+                            setOpenDropdown(openDropdown === u.id ? null : u.id)
+                          }
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors disabled:opacity-50"
+                          style={{
+                            color: roleInfo.color,
+                            background: roleInfo.bg,
+                            borderColor: roleInfo.color + "33",
+                          }}
+                        >
+                          {busy ? "Saving…" : roleInfo.label}
+                          {!busy && <ChevronDown size={11} strokeWidth={2.5} />}
+                        </button>
 
-                      {openDropdown === u.id && (
-                        <>
-                          {/* Click-away backdrop */}
-                          <div
-                            className="fixed inset-0 z-10"
-                            onClick={() => setOpenDropdown(null)}
-                          />
-                          <div className="absolute right-0 top-full mt-1 z-20 bg-white border border-border rounded-xl shadow-lg py-1 min-w-[200px]">
-                            {(Object.keys(ROLES) as Role[]).map((r) => {
-                              const ri = ROLES[r];
-                              const current = u.role === r;
-                              return (
-                                <button
-                                  key={r}
-                                  onClick={() => requestRoleChange(u, r)}
-                                  className="w-full text-left px-3.5 py-2.5 hover:bg-paper transition-colors flex items-start gap-2.5"
-                                >
-                                  <span
-                                    className="mt-0.5 w-2 h-2 rounded-full shrink-0"
-                                    style={{
-                                      background: current ? ri.color : "transparent",
-                                      outline: `1.5px solid ${ri.color}`,
-                                    }}
-                                  />
-                                  <span>
+                        {openDropdown === u.id && (
+                          <>
+                            <div
+                              className="fixed inset-0 z-10"
+                              onClick={() => setOpenDropdown(null)}
+                            />
+                            <div className="absolute right-0 top-full mt-1 z-20 bg-white border border-border rounded-xl shadow-lg py-1 min-w-[200px]">
+                              {(Object.keys(ROLES) as Role[]).map((r) => {
+                                const ri = ROLES[r];
+                                const current = u.role === r;
+                                return (
+                                  <button
+                                    key={r}
+                                    onClick={() => requestRoleChange(u, r)}
+                                    className="w-full text-left px-3.5 py-2.5 hover:bg-paper transition-colors flex items-start gap-2.5"
+                                  >
                                     <span
-                                      className="block text-xs font-bold"
-                                      style={{ color: ri.color }}
-                                    >
-                                      {ri.label}
-                                      {current && (
-                                        <span className="ml-1 font-normal text-ink-soft">
-                                          (current)
-                                        </span>
-                                      )}
+                                      className="mt-0.5 w-2 h-2 rounded-full shrink-0"
+                                      style={{
+                                        background: current ? ri.color : "transparent",
+                                        outline: `1.5px solid ${ri.color}`,
+                                      }}
+                                    />
+                                    <span>
+                                      <span
+                                        className="block text-xs font-bold"
+                                        style={{ color: ri.color }}
+                                      >
+                                        {ri.label}
+                                        {current && (
+                                          <span className="ml-1 font-normal text-ink-soft">
+                                            (current)
+                                          </span>
+                                        )}
+                                      </span>
+                                      <span className="block text-[11px] text-ink-soft mt-0.5">
+                                        {ri.description}
+                                      </span>
                                     </span>
-                                    <span className="block text-[11px] text-ink-soft mt-0.5">
-                                      {ri.description}
-                                    </span>
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </>
-                      )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => setConfirmDelete(u)}
+                        title="Delete account"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   )}
                 </div>
@@ -370,6 +379,48 @@ export function UserManagement({
           </div>
         )}
       </main>
+
+      {/* Confirm delete modal */}
+      {confirmDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(28,42,35,0.45)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setConfirmDelete(null); }}
+        >
+          <div className="bg-paper rounded-2xl shadow-xl w-full max-w-sm p-6 flex flex-col gap-4">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 w-9 h-9 rounded-[9px] flex items-center justify-center shrink-0 bg-red-50 text-red-500">
+                <Trash2 size={18} strokeWidth={2.2} />
+              </span>
+              <div>
+                <div className="font-display font-semibold text-[17px] text-ink">
+                  Delete account?
+                </div>
+                <p className="text-sm text-ink-soft mt-1 leading-relaxed">
+                  <b className="text-ink">{confirmDelete.email}</b> will be permanently removed.
+                  Their hubs will remain but be unowned. This cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-[9px] border border-border text-sm font-semibold text-ink-soft hover:bg-card transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteUser(confirmDelete)}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-[9px] text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {deleting ? "Deleting…" : "Delete account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirm mnipl_admin promotion modal */}
       {confirmPromotion && (
