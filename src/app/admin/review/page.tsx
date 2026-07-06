@@ -20,15 +20,17 @@ export default async function ReviewPage() {
 
   if (profile?.role !== "mnipl_admin") redirect("/admin");
 
-  // Fetch pending hubs and all users in parallel
-  const [{ data: hubs }, { data: users }] = await Promise.all([
+  // Fetch pending hubs, all verified hubs, and users in parallel
+  const [{ data: pendingHubs }, { data: allHubs }, { data: users }] = await Promise.all([
     supabase.from("hubs").select("*").eq("verified", false).order("created_at"),
+    supabase.from("hubs").select("*").eq("verified", true).order("name"),
     supabase.rpc("admin_list_users"),
   ]);
 
   return (
     <ReviewClient
-      hubs={(hubs as Hub[]) ?? []}
+      hubs={(pendingHubs as Hub[]) ?? []}
+      allHubs={(allHubs as Hub[]) ?? []}
       users={(users as ManagedUser[]) ?? []}
       currentUserId={user.id}
     />

@@ -14,13 +14,13 @@ import {
   Search,
   ChevronDown,
   LogOut,
-  ImagePlus,
   BookOpen,
   Star,
   Heart,
   Pencil,
   Check,
   X,
+  LayoutList,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { useRouter } from "next/navigation";
@@ -68,14 +68,16 @@ type Role = keyof typeof ROLES;
 
 // ── Main component ─────────────────────────────────────────────────────────
 
-type Tab = "review" | "users" | "questions";
+type Tab = "review" | "hubs" | "users" | "questions";
 
 export function ReviewClient({
   hubs: initialHubs,
+  allHubs: initialAllHubs,
   users: initialUsers,
   currentUserId,
 }: {
   hubs: Hub[];
+  allHubs: Hub[];
   users: ManagedUser[];
   currentUserId: string;
 }) {
@@ -83,6 +85,12 @@ export function ReviewClient({
 
   // Hub review state
   const [hubs, setHubs] = useState(initialHubs);
+
+  // All hubs management state
+  const [allHubs, setAllHubs] = useState(initialAllHubs);
+  const [hubSearch, setHubSearch] = useState("");
+  const [confirmDeleteHub, setConfirmDeleteHub] = useState<Hub | null>(null);
+  const [deletingHub, setDeletingHub] = useState(false);
   const [hubLoading, setHubLoading] = useState<string | null>(null);
 
   // User management state
@@ -138,6 +146,18 @@ export function ReviewClient({
       alert("Error deleting hub: " + error.message);
     }
     setHubLoading(null);
+  }
+
+  async function deleteVerifiedHub(hub: Hub) {
+    setDeletingHub(true);
+    const { error } = await supabase.from("hubs").delete().eq("id", hub.id);
+    if (!error) {
+      setAllHubs((prev) => prev.filter((h) => h.id !== hub.id));
+    } else {
+      alert("Error deleting hub: " + error.message);
+    }
+    setConfirmDeleteHub(null);
+    setDeletingHub(false);
   }
 
   // ── User management actions ──────────────────────────────────────────────
@@ -336,6 +356,20 @@ export function ReviewClient({
               {hubs.length}
             </span>
           )}
+        </button>
+        <button
+          onClick={() => setTab("hubs")}
+          className="flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors"
+          style={{
+            color: tab === "hubs" ? "#1F4032" : "#4A5750",
+            borderBottom: tab === "hubs" ? "2px solid #1F4032" : "2px solid transparent",
+          }}
+        >
+          <LayoutList size={15} />
+          Manage Hubs
+          <span className="ml-0.5 min-w-[18px] h-[18px] rounded-full text-[10.5px] font-bold flex items-center justify-center px-1 bg-[#1F40321A] text-[#1F4032]">
+            {allHubs.length}
+          </span>
         </button>
         <button
           onClick={() => setTab("users")}
@@ -561,6 +595,109 @@ export function ReviewClient({
               );
             })}
           </div>
+        </main>
+      )}
+
+      {/* ── Manage Hubs tab ──────────────────────────────────────────────── */}
+      {tab === "hubs" && (
+        <main className="max-w-3xl mx-auto w-full p-5 sm:p-6">
+          <p className="text-sm text-ink-soft mb-4">
+            {allHubs.length} published hub{allHubs.length !== 1 ? "s" : ""} · delete any hub to remove it from the public map immediately
+          </p>
+
+          <div className="relative mb-4">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search by name, neighborhood, or faith community…"
+              value={hubSearch}
+              onChange={(e) => setHubSearch(e.target.value)}
+              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border bg-card text-sm text-ink placeholder-ink-soft focus:outline-none focus:ring-2 focus:ring-pine/20"
+            />
+          </div>
+
+          {(() => {
+            const q = hubSearch.trim().toLowerCase();
+            const filtered = q
+              ? allHubs.filter(
+                  (h) =>
+                    h.name.toLowerCase().includes(q) ||
+                    h.neighborhood?.toLowerCase().includes(q) ||
+                    h.faith?.toLowerCase().includes(q)
+                )
+              : allHubs;
+
+            if (filtered.length === 0) {
+              return (
+                <div className="py-16 text-center text-sm text-ink-soft">
+                  No hubs match your search.
+                </div>
+              );
+            }
+
+            return (
+              <div className="flex flex-col gap-2">
+                {filtered.map((hub) => {
+                  const pf = primaryFunc(hub.functions as HubFunction[], hub.primary_function);
+                  const f = FUNCS[pf];
+                  const Icon = f.Icon;
+
+                  return (
+                    <div
+                      key={hub.id}
+                      className="bg-card border border-border rounded-xl overflow-hidden flex items-stretch"
+                    >
+                      {/* Color strip */}
+                      <div className="w-1 shrink-0" style={{ background: f.color }} />
+
+                      <div className="flex items-center gap-3 px-4 py-3 flex-1 min-w-0">
+                        {/* Icon */}
+                        <span
+                          className="w-9 h-9 rounded-[9px] flex items-center justify-center shrink-0"
+                          style={{ background: f.color + "1F", color: f.color }}
+                        >
+                          <Icon size={17} strokeWidth={2.5} />
+                        </span>
+
+                        {/* Info */}
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold text-sm text-ink truncate">{hub.name}</div>
+                          <div className="text-xs text-ink-soft truncate">
+                            {[hub.faith, hub.neighborhood, hub.address].filter(Boolean).join(" · ")}
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {(hub.functions as HubFunction[]).map((fn) => (
+                              <FuncTag key={fn} fn={fn} size="sm" />
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Status badge */}
+                        <span
+                          className="shrink-0 text-[11px] font-bold px-2 py-0.5 rounded-full"
+                          style={{
+                            background: hub.status === "open" ? "#1F40321A" : hub.status === "limited" ? "#C08A1A1A" : "#6B756D1A",
+                            color: hub.status === "open" ? "#1F4032" : hub.status === "limited" ? "#C08A1A" : "#6B756D",
+                          }}
+                        >
+                          {hub.status}
+                        </span>
+
+                        {/* Delete */}
+                        <button
+                          onClick={() => setConfirmDeleteHub(hub)}
+                          title="Delete hub"
+                          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </main>
       )}
 
@@ -837,6 +974,45 @@ export function ReviewClient({
             </div>
           )}
         </main>
+      )}
+
+      {/* Confirm hub deletion modal */}
+      {confirmDeleteHub && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(28,42,35,0.45)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setConfirmDeleteHub(null); }}
+        >
+          <div className="bg-paper rounded-2xl shadow-xl w-full max-w-sm p-6 flex flex-col gap-4">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 w-9 h-9 rounded-[9px] flex items-center justify-center shrink-0 bg-red-50 text-red-500">
+                <Trash2 size={18} strokeWidth={2.2} />
+              </span>
+              <div>
+                <div className="font-display font-semibold text-[17px] text-ink">Delete hub?</div>
+                <p className="text-sm text-ink-soft mt-1 leading-relaxed">
+                  <b className="text-ink">{confirmDeleteHub.name}</b> will be permanently removed from the public map. This cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmDeleteHub(null)}
+                disabled={deletingHub}
+                className="flex-1 py-2.5 rounded-[9px] border border-border text-sm font-semibold text-ink-soft hover:bg-card transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteVerifiedHub(confirmDeleteHub)}
+                disabled={deletingHub}
+                className="flex-1 py-2.5 rounded-[9px] text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {deletingHub ? "Deleting…" : "Delete hub"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Confirm MNIPL Admin promotion modal */}
