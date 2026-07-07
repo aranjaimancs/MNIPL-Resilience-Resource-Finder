@@ -21,6 +21,7 @@ import {
   Check,
   X,
   LayoutList,
+  UserPlus,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { useRouter } from "next/navigation";
@@ -93,6 +94,12 @@ export function ReviewClient({
   const [deletingHub, setDeletingHub] = useState(false);
   const [hubLoading, setHubLoading] = useState<string | null>(null);
 
+  // Hub assignment state
+  const [assignTarget, setAssignTarget] = useState<Hub | null>(null);
+  const [assignSearch, setAssignSearch] = useState("");
+  const [assigning, setAssigning] = useState(false);
+  const [assignFeedback, setAssignFeedback] = useState<{ message: string; ok: boolean } | null>(null);
+
   // User management state
   const [users, setUsers] = useState(initialUsers);
   const [search, setSearch] = useState("");
@@ -158,6 +165,31 @@ export function ReviewClient({
     }
     setConfirmDeleteHub(null);
     setDeletingHub(false);
+  }
+
+  async function assignOwner(hub: Hub, newOwnerId: string) {
+    setAssigning(true);
+    const { error } = await supabase
+      .from("hubs")
+      .update({ owner_id: newOwnerId, updated_at: new Date().toISOString() })
+      .eq("id", hub.id);
+
+    if (error) {
+      setAssignFeedback({ message: error.message, ok: false });
+    } else {
+      setAllHubs((prev) =>
+        prev.map((h) => (h.id === hub.id ? { ...h, owner_id: newOwnerId } : h))
+      );
+      const newOwner = users.find((u) => u.id === newOwnerId);
+      setAssignFeedback({
+        message: `${hub.name} assigned to ${newOwner?.email ?? "new owner"}`,
+        ok: true,
+      });
+      setAssignTarget(null);
+      setAssignSearch("");
+      setTimeout(() => setAssignFeedback(null), 4000);
+    }
+    setAssigning(false);
   }
 
   // ── User management actions ──────────────────────────────────────────────
@@ -602,8 +634,20 @@ export function ReviewClient({
       {tab === "hubs" && (
         <main className="max-w-3xl mx-auto w-full p-5 sm:p-6">
           <p className="text-sm text-ink-soft mb-4">
-            {allHubs.length} published hub{allHubs.length !== 1 ? "s" : ""} · delete any hub to remove it from the public map immediately
+            {allHubs.length} published hub{allHubs.length !== 1 ? "s" : ""} · assign each hub to its manager's account so they can control status and details
           </p>
+
+          {assignFeedback && (
+            <div
+              className={`mb-4 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium border ${
+                assignFeedback.ok
+                  ? "bg-green-50 border-green-200 text-green-800"
+                  : "bg-red-50 border-red-200 text-red-700"
+              }`}
+            >
+              {assignFeedback.ok ? "✓" : "✗"} {assignFeedback.message}
+            </div>
+          )}
 
           <div className="relative mb-4">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft pointer-events-none" />
@@ -670,6 +714,22 @@ export function ReviewClient({
                               <FuncTag key={fn} fn={fn} size="sm" />
                             ))}
                           </div>
+                          {/* Owner line */}
+                          {(() => {
+                            const owner = users.find((u) => u.id === hub.owner_id);
+                            return (
+                              <div className="mt-1.5 flex items-center gap-1">
+                                <Users size={10} className="text-ink-soft shrink-0" />
+                                <span className="text-[11px] text-ink-soft truncate">
+                                  {owner
+                                    ? owner.email
+                                    : hub.owner_id
+                                    ? "Unknown account"
+                                    : "Unassigned"}
+                                </span>
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* Status badge */}
@@ -682,6 +742,15 @@ export function ReviewClient({
                         >
                           {hub.status}
                         </span>
+
+                        {/* Assign owner */}
+                        <button
+                          onClick={() => { setAssignTarget(hub); setAssignSearch(""); }}
+                          title="Assign to hub manager"
+                          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-ink-soft hover:bg-card hover:text-pine transition-colors"
+                        >
+                          <UserPlus size={15} />
+                        </button>
 
                         {/* Delete */}
                         <button
@@ -974,6 +1043,135 @@ export function ReviewClient({
             </div>
           )}
         </main>
+      )}
+
+      {/* ── Assign hub owner modal ──────────────────────────────────────── */}
+      {assignTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(28,42,35,0.5)" }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setAssignTarget(null);
+              setAssignSearch("");
+            }
+          }}
+        >
+          <div className="bg-paper rounded-2xl shadow-xl w-full max-w-md flex flex-col max-h-[85vh]">
+            {/* Header */}
+            <div className="flex items-start gap-3 px-5 pt-5 pb-4 border-b border-border shrink-0">
+              <span className="w-9 h-9 rounded-[9px] flex items-center justify-center shrink-0 bg-pine/10 text-pine mt-0.5">
+                <UserPlus size={17} strokeWidth={2.2} />
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="font-display font-semibold text-[16px] text-ink leading-tight truncate">
+                  Assign "{assignTarget.name}"
+                </div>
+                <p className="text-xs text-ink-soft mt-0.5">
+                  Choose which account manages this hub
+                </p>
+              </div>
+              <button
+                onClick={() => { setAssignTarget(null); setAssignSearch(""); }}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-soft hover:bg-card transition-colors shrink-0"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Search */}
+            <div className="px-5 py-3 border-b border-border shrink-0">
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft pointer-events-none" />
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Search by name or email…"
+                  value={assignSearch}
+                  onChange={(e) => setAssignSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-2 rounded-lg border border-border bg-card text-sm text-ink placeholder-ink-soft focus:outline-none focus:ring-2 focus:ring-pine/20"
+                />
+              </div>
+            </div>
+
+            {/* User list */}
+            <div className="flex-1 overflow-y-auto px-5 py-3 flex flex-col gap-1.5">
+              {(() => {
+                const q = assignSearch.trim().toLowerCase();
+                const filtered = users.filter(
+                  (u) =>
+                    (!q ||
+                      u.email?.toLowerCase().includes(q) ||
+                      u.full_name?.toLowerCase().includes(q))
+                );
+
+                if (filtered.length === 0) {
+                  return (
+                    <p className="text-sm text-ink-soft text-center py-8">
+                      No users match your search.
+                    </p>
+                  );
+                }
+
+                return filtered.map((u) => {
+                  const isCurrentOwner = u.id === assignTarget.owner_id;
+                  const roleInfo = ROLES[u.role as Role] ?? ROLES.resident;
+                  return (
+                    <button
+                      key={u.id}
+                      disabled={assigning || isCurrentOwner}
+                      onClick={() => assignOwner(assignTarget, u.id)}
+                      className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl border text-left transition-all disabled:cursor-default"
+                      style={{
+                        borderColor: isCurrentOwner ? "#1F4032" : "#DDD5C2",
+                        background: isCurrentOwner ? "#1F40320A" : "#FBF8F0",
+                      }}
+                    >
+                      {/* Avatar */}
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-xs"
+                        style={{ background: roleInfo.bg, color: roleInfo.color }}
+                      >
+                        {(u.full_name ?? u.email ?? "?")[0].toUpperCase()}
+                      </div>
+
+                      {/* Name + email + role */}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-ink truncate">
+                          {u.full_name ?? <span className="text-ink-soft italic">No name</span>}
+                        </div>
+                        <div className="text-xs text-ink-soft truncate">{u.email}</div>
+                      </div>
+
+                      {/* Role pill */}
+                      <span
+                        className="shrink-0 text-[10.5px] font-bold px-2 py-0.5 rounded-full"
+                        style={{ color: roleInfo.color, background: roleInfo.bg }}
+                      >
+                        {roleInfo.label}
+                      </span>
+
+                      {/* Current owner checkmark */}
+                      {isCurrentOwner && (
+                        <Check size={15} strokeWidth={2.5} style={{ color: "#1F4032" }} className="shrink-0" />
+                      )}
+                    </button>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-3 border-t border-border shrink-0">
+              <button
+                onClick={() => { setAssignTarget(null); setAssignSearch(""); }}
+                className="w-full py-2.5 rounded-[10px] border border-border text-sm font-semibold text-ink-soft hover:bg-card transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Confirm hub deletion modal */}
